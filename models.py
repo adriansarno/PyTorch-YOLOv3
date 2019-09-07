@@ -186,6 +186,7 @@ class YOLOLayer(nn.Module):
                 target=targets,
                 anchors=self.scaled_anchors,
                 ignore_thres=self.ignore_thres,
+                cuda=x.is_cuda
             )
 
             # Loss : Mask outputs to ignore non-existing objects (except with conf. loss)

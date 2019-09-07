@@ -264,14 +264,10 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.4):
     return output
 
 
-def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
+def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, cuda):
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = 'cpu'
-    print(device)
-
-    ByteTensor = torch.cuda.ByteTensor if device == 'cuda' else torch.ByteTensor
-    FloatTensor = torch.cuda.FloatTensor if device == 'cuda' else torch.FloatTensor
+    ByteTensor = torch.cuda.ByteTensor if cuda else torch.ByteTensor
+    FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
     nB = pred_boxes.size(0)
     nA = pred_boxes.size(1)
@@ -287,6 +283,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
     ty = FloatTensor(nB, nA, nG, nG).fill_(0)
     tw = FloatTensor(nB, nA, nG, nG).fill_(0)
     th = FloatTensor(nB, nA, nG, nG).fill_(0)
+    print(nB, nA, nG, nG, nC)
     tcls = FloatTensor(nB, nA, nG, nG, nC).fill_(0)
 
     # Convert to position relative to box

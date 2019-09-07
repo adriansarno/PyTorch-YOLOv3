@@ -21,10 +21,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import NullLocator
 
-device = torch.device("cuda" if device == 'cuda' else "cpu")
-device = 'cpu'
-print(device)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_folder", type=str, default="data/samples", help="path to dataset")
@@ -37,8 +33,15 @@ if __name__ == "__main__":
     parser.add_argument("--n_cpu", type=int, default=0, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
     parser.add_argument("--checkpoint_model", type=str, help="path to checkpoint model")
+    parser.add_argument("--cuda", type=bool, default=False, help="use GPU if available (True/False)")
     opt = parser.parse_args()
     print(opt)
+
+    if opt.cuda:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+    print(opt.cuda, torch.cuda.is_available(), device)
 
     os.makedirs("output", exist_ok=True)
 
@@ -63,7 +66,7 @@ if __name__ == "__main__":
 
     classes = load_classes(opt.class_path)  # Extracts class labels from file
 
-    Tensor = torch.cuda.FloatTensor if device == 'cuda' else torch.FloatTensor
+    Tensor = torch.cuda.FloatTensor if device.type == 'cuda' else torch.FloatTensor
 
     imgs = []  # Stores image paths
     img_detections = []  # Stores detections for each image index

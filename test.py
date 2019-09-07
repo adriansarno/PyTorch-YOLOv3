@@ -42,8 +42,6 @@ def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size
         targets[:, 2:] *= img_size
 
         imgs = Variable(imgs.type(Tensor), requires_grad=False)
-        print("imgs: {}".format(type(imgs.data)))
-        print("imgs: {}".format(imgs.data))
 
         with torch.no_grad():
             outputs = model(imgs)

@@ -37,15 +37,18 @@ if __name__ == "__main__":
     parser.add_argument("--compute_map", default=False, help="if True computes mAP every tenth batch")
     parser.add_argument("--multiscale_training", default=True, help="allow for multi-scale training")
     parser.add_argument("--log_folder", default='logs', help="allow creating a new subfolder for each run")
+    parser.add_argument("--cuda", type=bool, default=False, help="use GPU if available (True/False)")
     opt = parser.parse_args()
     print(opt)
 
     os.makedirs(opt.log_folder, exist_ok=True)
     logger = Logger(opt.log_folder)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = 'cpu'
-    print(device)
+    if opt.cuda:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+    print(opt.cuda, torch.cuda.is_available(), device)
     print('torch version: ', torch.__version__)
     print('-----------------------------------------')
 
@@ -154,7 +157,7 @@ if __name__ == "__main__":
             model.seen += imgs.size(0)
 
         if epoch % opt.evaluation_interval == 0:
-            print("\n---- Evaluating Model ----")
+            print("\n---- Evaluating Model on {} ----".format(device.type))
             # Evaluate the model on the validation set
             precision, recall, AP, f1, ap_class = evaluate(
                 model,
@@ -163,7 +166,8 @@ if __name__ == "__main__":
                 conf_thres=0.5,
                 nms_thres=0.5,
                 img_size=opt.img_size,
-                batch_size=8,
+                batch_size=opt.batch_size,
+                device=device
             )
             evaluation_metrics = [
                 ("val_precision", precision.mean()),

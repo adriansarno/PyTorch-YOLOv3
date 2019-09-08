@@ -19,11 +19,8 @@ from torchvision import transforms
 from torch.autograd import Variable
 import torch.optim as optim
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = 'cpu'
-print(device)
 
-def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size):
+def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size, device):
     model.eval()
 
     # Get dataloader
@@ -32,10 +29,7 @@ def evaluate(model, path, iou_thres, conf_thres, nms_thres, img_size, batch_size
         dataset, batch_size=batch_size, shuffle=False, num_workers=1, collate_fn=dataset.collate_fn
     )
 
-    print('torch version: ', torch.__version__)
-    print('-----------------------------------------')
-   
-    Tensor = torch.cuda.FloatTensor if device == 'cuda' else torch.FloatTensor
+    Tensor = torch.cuda.FloatTensor if device.type == "cuda" else torch.FloatTensor
 
     labels = []
     sample_metrics = []  # List of tuples (TP, confs, pred)
@@ -74,9 +68,15 @@ if __name__ == "__main__":
     parser.add_argument("--nms_thres", type=float, default=0.5, help="iou thresshold for non-maximum suppression")
     parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--img_size", type=int, default=416, help="size of each image dimension")
+    parser.add_argument("--cuda", type=bool, default=False, help="use GPU if available (True/False)")
     opt = parser.parse_args()
     print(opt)
 
+    if opt.cuda:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+    print(device)
     data_config = parse_data_config(opt.data_config)
     valid_path = data_config["valid"]
     class_names = load_classes(data_config["names"])
@@ -99,7 +99,8 @@ if __name__ == "__main__":
         conf_thres=opt.conf_thres,
         nms_thres=opt.nms_thres,
         img_size=opt.img_size,
-        batch_size=8,
+        batch_size=opt.batch_size,
+        device=device
     )
 
     print("Average Precisions:")

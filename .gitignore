@@ -13,3 +13,4 @@ checkpoints
 weights
 logs
 data_kuzu
+*.pth

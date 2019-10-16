@@ -92,89 +92,28 @@ if __name__ == "__main__":
         imgs.extend(img_paths)
         img_detections.extend(detections)
 
-    # Bounding-box colors
-    cmap = plt.get_cmap("tab20b")
-    colors = [cmap(i) for i in np.linspace(0, 1, 20)]
-
-    print("\nSaving images:")
-    # Iterate through images and save plot of detections
-    for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
-
-        print("(%d) Image: '%s'" % (img_i, path))
-
-        # Create plot
-        img = np.array(Image.open(path))
-        plt.figure()
-        fig, ax = plt.subplots(1)
-        ax.imshow(img)
-
-        # Draw bounding boxes and labels of detections
-        if detections is not None:
-            # Rescale boxes to original image
-            detections = rescale_boxes(detections, opt.img_size, img.shape[:2])
-            unique_labels = detections[:, -1].cpu().unique()
-            n_cls_preds = len(unique_labels)
-            bbox_colors = random.sample(colors, min(n_cls_preds, len(colors)))
-            for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-
-                print("\t+ Label: %s, Conf: %.5f" % (classes[int(cls_pred)], cls_conf.item()))
-
-                box_w = x2 - x1
-                box_h = y2 - y1
-
-                color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])//len(colors)]
-                # Create a Rectangle patch
-                bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor="none")
-                # Add the bbox to the plot
-                ax.add_patch(bbox)
-                # Add label
-                plt.text(
-                    x1,
-                    y1,
-                    s=classes[int(cls_pred)],
-                    color="white",
-                    verticalalignment="top",
-                    bbox={"color": color, "pad": 0},
-                )
-
-        # Save generated image with detections
-        plt.axis("off")
-        plt.gca().xaxis.set_major_locator(NullLocator())
-        plt.gca().yaxis.set_major_locator(NullLocator())
-        filename = path.split("/")[-1].split(".")[0]
-        plt.savefig(f"output/{filename}.png", bbox_inches="tight", pad_inches=0.0)
-        plt.close()
-
 
     # Save detections
-    curr_img_id = ""
-    labels = []
-    for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
-        with open("output/detections.txt", 'w') as f:
-            for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
-                img_id = path.split('/')[-1].split(".")[0]
-                x1 = int(x1.item())
-                y1 = int(y1.item())
-                x2 = int(x2.item())
-                y2 = int(y2.item())
-                conf = round(conf.item(), 5)
-                cls_conf = round(cls_conf.item(), 5)
-                cls_pred = int(cls_pred.item())
-                # print(img_id, x1, y1, x2, y2, conf, cls_conf, cls_pred)
+    with open("output/detections.csv", 'w') as f:
+        f.write("image_id,labels\n")
+        for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
+            img_id = path.split('/')[-1].split(".")[0]
+            f.write("{},".format(img_id))
+            labels_line, labels = "", []
+            if detections is not None:
+                for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
+                    x1, y1 = int(x1.item()), int(y1.item())
+                    x2, y2 = int(x2.item()), int(y2.item())
+                    xc = (x1 + x2) // 2
+                    yc = (y1 + y2) // 2
+                    cls_pred = int(cls_pred.item())
+                    labels.append([cls_pred, xc, yc])
 
-                if img_id != curr_img_id:
-                    print(img_id, curr_img_id, len(curr_img_id))
-                    if len(curr_img_id) != 0:
-                        labels_line = " ".join(["{} {} {}".format(classes[cls_pred], xc, yc) for (cls_pred, xc, yc) in labels])
-                        f.write("{},{}\n".format(curr_img_id,labels_line))
-                    curr_img_id = img_id
-                    labels = []
+                    # conf = round(conf.item(), 5)
+                    # cls_conf = round(cls_conf.item(), 5)
+                    # print(img_id, x1, y1, x2, y2, conf, cls_conf, cls_pred)
 
-                xc = (x1 + x2) // 2
-                yc = (y1 + y2) // 2
-                labels.append([cls_pred, xc, yc])
+                labels_line = " ".join(["{} {} {}".format(classes[cls_pred], xc, yc) for (cls_pred, xc, yc) in labels])
 
-
-            labels_line = " ".join(["{} {} {}".format(classes[cls_pred], xc, yc) for (cls_pred, xc, yc) in labels])
-            f.write("{},{}".format(curr_img_id,labels_line))
+            f.write("{}\n".format(labels_line))
 
